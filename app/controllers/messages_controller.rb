@@ -10,7 +10,15 @@ class MessagesController < ApplicationController
         message.number = message_number
         message.chat = chat
 
-		if message.save
+		if message.valid?
+			queue_size = redis.lpush("messages", {
+				"number"=>message_number,
+				"chat_id"=>chat.id,
+				"body"=>message.body
+			}.to_json)
+			if queue_size >= Rails.configuration.messages_batch_size
+				CreateMessagesJob.perform_async(SecureRandom.uuid)
+			end
 			render json: message, status: :created
 		else
 			render json: message.errors, status: :bad_request

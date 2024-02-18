@@ -16,6 +16,7 @@ module App
 
     config.autoload_lib(ignore: %w(assets tasks))
 
-    config.chat_batch_size = 3
+    config.chats_batch_size = 3
+    config.messages_batch_size = 3
   end
 end

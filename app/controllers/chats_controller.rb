@@ -13,7 +13,7 @@ class ChatsController < ApplicationController
 				"messages_count"=>0,
 				"application_id"=>application.id
 			}.to_json)
-			if queue_size >= Rails.configuration.chat_batch_size
+			if queue_size >= Rails.configuration.chats_batch_size
 				CreateChatsJob.perform_async(SecureRandom.uuid)
 			end
 			render json: chat, status: :created

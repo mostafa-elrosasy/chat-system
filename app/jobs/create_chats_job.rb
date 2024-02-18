@@ -8,7 +8,7 @@ class CreateChatsJob
   def perform(back_up_queue_id)
     redis = Redis.new(host: "redis", port: 6379)
     chats_data =  redis.lrange(back_up_queue_id, 0, -1)
-    (Rails.configuration.chat_batch_size - chats_data.length).times do
+    (Rails.configuration.chats_batch_size - chats_data.length).times do
       chat_data = redis.lmove("chats", back_up_queue_id, :right, :left)
       break if chat_data.nil?        
       chats_data.append(chat_data)

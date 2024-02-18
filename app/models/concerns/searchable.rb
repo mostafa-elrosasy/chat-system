@@ -6,7 +6,9 @@ module Searchable
         include Elasticsearch::Model::Callbacks
 
         mappings do
-        indexes :body, type: 'text'
+            indexes :body, type: 'text'
+            indexes :number, type: 'Numbers'
+            indexes :chat_id, type: 'Numbers'
         end
 
         def self.search(query)
