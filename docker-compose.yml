@@ -49,3 +49,19 @@ services:
         expose:
             - 9200
         environment: ['ES_JAVA_OPTS=-Xms2g -Xmx2g','bootstrap.memory_lock=true','discovery.type=single-node']
+    sidekiq:
+        build: .
+        command: bundle exec sidekiq
+        volumes:
+            - ".:/app"
+        environment:
+            RAILS_ENV: development
+            REDIS_HOST: redis
+            REDIS_PORT: 6379
+            DB_USER: root
+            DB_NAME: app
+            DB_PASSWORD: password
+            DB_HOST: db
+            DB_PORT: 3306
+        depends_on:
+            - "redis"

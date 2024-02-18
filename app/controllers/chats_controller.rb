@@ -1,3 +1,5 @@
+require 'securerandom'
+
 class ChatsController < ApplicationController
 	def create
 		application = Application.find_by(token: params[:application_token])
@@ -5,7 +7,15 @@ class ChatsController < ApplicationController
 		chat_number = redis.incr("application_#{params[:application_token]}_chats_count")
 		chat = Chat.new(number: chat_number, messages_count: 0, application: application)
 
-		if chat.save
+		if chat.valid?
+			queue_size = redis.lpush("chats", {
+				"number"=>chat_number,
+				"messages_count"=>0,
+				"application_id"=>application.id
+			}.to_json)
+			if queue_size >= Rails.configuration.chat_batch_size
+				CreateChatsJob.perform_async(SecureRandom.uuid)
+			end
 			render json: chat, status: :created
 		else
 			render json: chat.errors, status: :bad_request
