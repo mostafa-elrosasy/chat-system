@@ -1,5 +1,8 @@
 class MessagesController < ApplicationController
-    def create
+	DEFAULT_SEARCH_PAGE_SIZE = 10
+	MAX_SEARCH_PAGE_SIZE = 100
+    
+	def create
 		chat = Chat.joins(:application).where(
 			number: params[:chat_number],
 			application:{ token: params[:application_token] }
@@ -39,8 +42,37 @@ class MessagesController < ApplicationController
 		end
 	end
 
+	def search
+		chat = Chat.joins(:application).where(
+			number: params[:chat_number],
+			application:{ token: params[:application_token] }
+		).first
+		search_text, page_number, page_size = get_search_params_if_valid()
+		puts get_search_params_if_valid
+		render json: Message.search(search_text, chat.id, page_number, page_size)
+	end
+
+	
     private
     def message_params
         params.require(:message).permit(:body)
     end
+	
+	def get_search_params_if_valid()
+		if params[:body].blank?
+			raise Exceptions::MissingQueryParameterError.new(
+				"Query param 'body' is required for search"
+			)
+		end
+		page_size = params.fetch(:page_size, DEFAULT_SEARCH_PAGE_SIZE).to_i
+		page_size = DEFAULT_SEARCH_PAGE_SIZE if page_size <= 0 
+		page_size = [page_size, MAX_SEARCH_PAGE_SIZE].min
+		page_number = params.fetch(:page_number, 1).to_i
+		page_number = 1 if page_number < 1
+		return params[:body], page_number, page_size
+	end
+
+	rescue_from Exceptions::MissingQueryParameterError do |e|
+		render json: { error: e.to_s }, :status => :bad_request
+	end
 end

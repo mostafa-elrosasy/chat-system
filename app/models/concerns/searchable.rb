@@ -7,22 +7,34 @@ module Searchable
 
         mappings do
             indexes :body, type: 'text'
-            indexes :number, type: 'Numbers'
-            indexes :chat_id, type: 'Numbers'
+            indexes :chat_id, type: 'keyword'
         end
 
-        def self.search(query)
-        params = {
-            query: {
-            multi_match: {
-                query: query,
-                fields: ['body'],
-                fuzziness: "AUTO"
+        def self.search(message_body, chat_id, page_number, size)
+            from = (page_number - 1) * size
+            params = {
+                from: from,
+                size: size,
+                query: {
+                bool: {
+                    must:[
+                    {
+                        multi_match: {
+                            query: message_body,
+                            fields: ['body'],
+                            fuzziness: "AUTO",
+                        }
+                    },
+                    {
+                        term: {
+                            chat_id: chat_id
+                        }
+                    }]
+                }
+                }
             }
-            }
-        }
 
-        self.__elasticsearch__.search(params).records.to_a
+            self.__elasticsearch__.search(params).records.to_a
         end    
     end
 end

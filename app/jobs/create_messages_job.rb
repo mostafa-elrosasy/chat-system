@@ -24,7 +24,11 @@ class CreateMessagesJob
     messages_data.each do |message_data|
       conditions << "(number = #{message_data["number"]} AND chat_id = #{message_data["chat_id"]})"
     end
-    combined_condition = conditions.join(' OR ')
-    Message.import query: -> { where(combined_condition) }
+    query = conditions.join(' OR ')
+    begin
+      Message.import(query: -> { where(query) })
+    rescue ArgumentError 
+      Message.import(query: -> { where(query) }, force: true)
+    end
   end
 end
