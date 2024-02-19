@@ -48,7 +48,6 @@ class MessagesController < ApplicationController
 			application:{ token: params[:application_token] }
 		).first
 		search_text, page_number, page_size = get_search_params_if_valid()
-		puts get_search_params_if_valid
 		render json: Message.search(search_text, chat.id, page_number, page_size)
 	end
 
