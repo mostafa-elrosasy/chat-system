@@ -23,7 +23,7 @@ class MessagesController < ApplicationController
 			if queue_size >= Rails.configuration.messages_batch_size
 				CreateMessagesJob.perform_async(SecureRandom.uuid)
 			end
-			render json: message, status: :created
+			render json: MessageRepresenter.new(message).as_json, status: :created
 		else
 			render json: message.errors, status: :bad_request
 		end
@@ -37,7 +37,7 @@ class MessagesController < ApplicationController
 		)
 
 		if message
-			render json:message
+			render json: MessageRepresenter.new(message).as_json
 		else
 			render json: "Message not Found", status: 404
 		end
@@ -48,7 +48,7 @@ class MessagesController < ApplicationController
 			application:{ token: params[:application_token] },
 			chat: {number: params[:chat_number]}
 		)
-		render json:paginate(messages)
+		render json: MessageRepresenter.new(paginate(messages)).as_json
 	end
 
 	def search
@@ -58,7 +58,8 @@ class MessagesController < ApplicationController
 		).first
 		validate_body_param()
 		page_number, page_size = get_pagination_params()
-		render json: Message.search(params[:body], chat.id, page_number, page_size)
+		messages = Message.search(params[:body], chat.id, page_number, page_size)
+		render json: MessageRepresenter.new(messages).as_json
 	end
 
 	def update
@@ -70,7 +71,7 @@ class MessagesController < ApplicationController
 		return render(json: "Message not Found", status: 404) unless message
 	
 		if message.update(message_params)
-		  render json: message
+		  render json: MessageRepresenter.new(message).as_json
 		else
 		  render json: { errors: message.errors }, status: :unprocessable_entity
 		end
