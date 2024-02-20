@@ -20,7 +20,7 @@ class ChatsController < ApplicationController
 			if queue_size >= Rails.configuration.chats_batch_size
 				CreateChatsJob.perform_async(SecureRandom.uuid)
 			end
-			render json: chat, status: :created
+			render json: ChatRepresenter.new(chat).as_json, status: :created
 		else
 			render json: chat.errors, status: :bad_request
 		end
@@ -32,7 +32,7 @@ class ChatsController < ApplicationController
 			application:{ token: params[:application_token] }
 		).first
 		if chat
-			render json:chat
+			render json: ChatRepresenter.new(chat).as_json
 		else
 			render json: "Chat not Found", status: 404
 		end
@@ -42,6 +42,6 @@ class ChatsController < ApplicationController
 		chats = Chat.joins(:application).where(
 			application:{ token: params[:application_token] }
 		)
-		render json:paginate(chats)
+		render json: ChatRepresenter.new(paginate(chats)).as_json
 	end
 end

@@ -7,7 +7,7 @@ class ApplicationsController < ApplicationController
     application.chats_count = 0
 
     if application.save
-      render json: application, status: :created
+      render json: ApplicationRepresenter.new(application).as_json, status: :created
     else
       render json: application.errors, status: :bad_request
     end
@@ -16,7 +16,7 @@ class ApplicationsController < ApplicationController
   def show
     application = Application.find_by(token: params[:token])
     if application
-      render json:application
+      render json: ApplicationRepresenter.new(application).as_json
     else
       render json: "Application not Found", status: 404
     end
@@ -27,7 +27,7 @@ class ApplicationsController < ApplicationController
     return render(json: "Application not Found", status: 404) unless application
 
     if application.update(application_params)
-      render json: application
+      render json: ApplicationRepresenter.new(application).as_json
     else
       render json: { errors: application.errors }, status: :unprocessable_entity
     end
