@@ -3,20 +3,19 @@ require 'json'
 
 class CreateMessagesJob
   include Sidekiq::Job
-  sidekiq_options retry: 1
+  sidekiq_options retry: 3
 
   def perform(back_up_queue_id)
-    redis = Redis.new(host: "redis", port: 6379)
-    messages_data =  redis.lrange(back_up_queue_id, 0, -1)
+    messages_data =  $redis.lrange(back_up_queue_id, 0, -1)
     (Rails.configuration.messages_batch_size - messages_data.length).times do
-      message_data = redis.lmove("messages", back_up_queue_id, :right, :left)
+      message_data = $redis.lmove("messages", back_up_queue_id, :right, :left)
       break if message_data.nil?        
       messages_data.append(message_data)
     end
     messages_data = messages_data.map { |message_data| JSON.parse(message_data) }
     Message.insert_all(messages_data)
     index_messages(messages_data)
-    redis.del(back_up_queue_id)
+    $redis.del(back_up_queue_id)
   end
 
   def index_messages(messages_data)

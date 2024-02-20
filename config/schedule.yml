@@ -1,4 +1,4 @@
 update_counts:
-  cron: "*/15 * * * *"
+  cron: "*/30 * * * *"
   class: "UpdateCountsJob"
   queue: default

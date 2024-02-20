@@ -16,6 +16,8 @@ module App
 
     config.autoload_lib(ignore: %w(assets tasks))
 
+    config.redis_chats_number_key_prefix = "chats_number_application"
+    config.redis_messages_number_key_prefix = "messages_number_chat"
     config.chats_batch_size = 3
     config.messages_batch_size = 3
   end

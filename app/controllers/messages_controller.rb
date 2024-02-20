@@ -5,17 +5,18 @@ class MessagesController < ApplicationController
 		chat = Chat.joins(:application).where(
 			number: params[:chat_number],
 			application:{ token: params[:application_token] }
-		).first
+		).select("id").first
 		return render(json: "Chat not Found", status: 404) unless chat
 
-		redis = Redis.new(host: "redis", port: 6379)
-		message_number = redis.incr("application_#{params[:application_token]}_chat_#{chat.number}_messages_count")
+		message_number = $redis.incr(
+			"#{Rails.configuration.redis_messages_number_key_prefix}_#{chat.id}"
+		)
 		message = Message.new(message_params)
         message.number = message_number
         message.chat = chat
 
 		if message.valid?
-			queue_size = redis.lpush("messages", {
+			queue_size = $redis.lpush("messages", {
 				"number"=>message_number,
 				"chat_id"=>chat.id,
 				"body"=>message.body
@@ -49,7 +50,8 @@ class MessagesController < ApplicationController
 		messages = Message.includes(:chat, :chat => [:application]).where(
 			application:{ token: params[:application_token] },
 			chat: {number: params[:chat_number]}
-		).order(number: :desc).pluck(
+		).order(number: :desc)
+		messages = paginate(messages).pluck(
 			'messages.number', 'messages.body'
 		).map { |number, body| {id: number, name: body}}
 		render json: messages

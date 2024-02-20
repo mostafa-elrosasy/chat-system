@@ -4,15 +4,18 @@ class ChatsController < ApplicationController
 	include PaginationConcern
 
 	def create
-		application = Application.find_by(token: params[:application_token])
+		application = Application.where(
+			token: params[:application_token]
+		).select("id").first
 		return render(json: "Application not Found", status: 404) unless application
 
-		redis = Redis.new(host: "redis", port: 6379)
-		chat_number = redis.incr("application_#{params[:application_token]}_chats_count")
+		chat_number = $redis.incr(
+			"#{Rails.configuration.redis_chats_number_key_prefix}_#{application.id}"
+		)
 		chat = Chat.new(number: chat_number, messages_count: 0, application: application)
 
 		if chat.valid?
-			queue_size = redis.lpush("chats", {
+			queue_size = $redis.lpush("chats", {
 				"number"=>chat_number,
 				"messages_count"=>0,
 				"application_id"=>application.id
@@ -44,7 +47,8 @@ class ChatsController < ApplicationController
 	def index
 		chats = Chat.joins(:application).where(
 			application:{ token: params[:application_token] }
-		).pluck(
+		)
+		chats = paginate(chats) .pluck(
 			'chats.number', 'chats.messages_count'
 		).map { |number, messages_count| {number: number, messages_count: messages_count}}
 		render json: chats
