@@ -1,8 +1,12 @@
 require 'securerandom'
 
 class ChatsController < ApplicationController
+	include PaginationConcern
+
 	def create
 		application = Application.find_by(token: params[:application_token])
+		return render(json: "Application not Found", status: 404) unless application
+
 		redis = Redis.new(host: "redis", port: 6379)
 		chat_number = redis.incr("application_#{params[:application_token]}_chats_count")
 		chat = Chat.new(number: chat_number, messages_count: 0, application: application)
@@ -32,5 +36,12 @@ class ChatsController < ApplicationController
 		else
 			render json: "Chat not Found", status: 404
 		end
+	end
+
+	def index
+		chats = Chat.joins(:application).where(
+			application:{ token: params[:application_token] }
+		)
+		render json:paginate(chats)
 	end
 end

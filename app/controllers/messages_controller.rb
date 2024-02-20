@@ -1,12 +1,13 @@
 class MessagesController < ApplicationController
-	DEFAULT_SEARCH_PAGE_SIZE = 10
-	MAX_SEARCH_PAGE_SIZE = 100
-    
+	include PaginationConcern
+
 	def create
 		chat = Chat.joins(:application).where(
 			number: params[:chat_number],
 			application:{ token: params[:application_token] }
 		).first
+		return render(json: "Chat not Found", status: 404) unless chat
+
 		redis = Redis.new(host: "redis", port: 6379)
 		message_number = redis.incr("application_#{params[:application_token]}_chat_#{chat.number}_messages_count")
 		message = Message.new(message_params)
@@ -29,11 +30,11 @@ class MessagesController < ApplicationController
 	end
 
 	def show
-		chat = Chat.joins(:application).where(
-			number: params[:chat_number],
-			application:{ token: params[:application_token] }
-		).first
-        message = Message.find_by(chat: chat, number: params[:number])
+		message = Message.includes(:chat, :chat => [:application]).where(
+			number: params[:number],
+			application:{ token: params[:application_token] },
+			chat: {number: params[:chat_number]}
+		)
 
 		if message
 			render json:message
@@ -42,33 +43,50 @@ class MessagesController < ApplicationController
 		end
 	end
 
+	def index
+		messages = Message.includes(:chat, :chat => [:application]).where(
+			application:{ token: params[:application_token] },
+			chat: {number: params[:chat_number]}
+		)
+		render json:paginate(messages)
+	end
+
 	def search
 		chat = Chat.joins(:application).where(
 			number: params[:chat_number],
 			application:{ token: params[:application_token] }
 		).first
-		search_text, page_number, page_size = get_search_params_if_valid()
-		render json: Message.search(search_text, chat.id, page_number, page_size)
+		validate_body_param()
+		page_number, page_size = get_pagination_params()
+		render json: Message.search(params[:body], chat.id, page_number, page_size)
 	end
 
+	def update
+		message = Message.includes(:chat, :chat => [:application]).where(
+			number: params[:number],
+			application:{ token: params[:application_token] },
+			chat: {number: params[:chat_number]}
+		).first
+		return render(json: "Message not Found", status: 404) unless message
 	
+		if message.update(message_params)
+		  render json: message
+		else
+		  render json: { errors: message.errors }, status: :unprocessable_entity
+		end
+	end
+
     private
     def message_params
         params.require(:message).permit(:body)
     end
 	
-	def get_search_params_if_valid()
+	def validate_body_param()
 		if params[:body].blank?
 			raise Exceptions::MissingQueryParameterError.new(
 				"Query param 'body' is required for search"
 			)
-		end
-		page_size = params.fetch(:page_size, DEFAULT_SEARCH_PAGE_SIZE).to_i
-		page_size = DEFAULT_SEARCH_PAGE_SIZE if page_size <= 0 
-		page_size = [page_size, MAX_SEARCH_PAGE_SIZE].min
-		page_number = params.fetch(:page_number, 1).to_i
-		page_number = 1 if page_number < 1
-		return params[:body], page_number, page_size
+		end		
 	end
 
 	rescue_from Exceptions::MissingQueryParameterError do |e|

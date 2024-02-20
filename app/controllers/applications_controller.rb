@@ -18,7 +18,18 @@ class ApplicationsController < ApplicationController
     if application
       render json:application
     else
-      render json: "Application not Found", status: 404 unless application
+      render json: "Application not Found", status: 404
+    end
+  end
+
+  def update
+    application = Application.find_by(token: params[:token])
+    return render(json: "Application not Found", status: 404) unless application
+
+    if application.update(application_params)
+      render json: application
+    else
+      render json: { errors: application.errors }, status: :unprocessable_entity
     end
   end
 
