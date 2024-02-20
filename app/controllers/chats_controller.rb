@@ -34,8 +34,8 @@ class ChatsController < ApplicationController
 			'chats.number', 'chats.messages_count'
 		).map { |number, messages_count| {number: number, messages_count: messages_count}}
 
-		if chat.empty?
-			render json: ChatRepresenter.new(chat).as_json
+		unless chat.empty?
+			render json: chat[0]
 		else
 			render json: "Chat not Found", status: 404
 		end

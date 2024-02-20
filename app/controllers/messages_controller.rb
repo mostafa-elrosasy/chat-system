@@ -37,7 +37,7 @@ class MessagesController < ApplicationController
 		).pluck(
 			'messages.number', 'messages.body'
 		).map { |number, body| {id: number, name: body}}
-		puts message
+
 		unless message.empty?
 			render json: message[0]
 		else
