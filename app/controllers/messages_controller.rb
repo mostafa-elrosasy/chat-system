@@ -34,10 +34,12 @@ class MessagesController < ApplicationController
 			number: params[:number],
 			application:{ token: params[:application_token] },
 			chat: {number: params[:chat_number]}
-		)
-
-		if message
-			render json: MessageRepresenter.new(message).as_json
+		).pluck(
+			'messages.number', 'messages.body'
+		).map { |number, body| {id: number, name: body}}
+		puts message
+		unless message.empty?
+			render json: message[0]
 		else
 			render json: "Message not Found", status: 404
 		end
@@ -47,8 +49,10 @@ class MessagesController < ApplicationController
 		messages = Message.includes(:chat, :chat => [:application]).where(
 			application:{ token: params[:application_token] },
 			chat: {number: params[:chat_number]}
-		)
-		render json: MessageRepresenter.new(paginate(messages)).as_json
+		).order(number: :desc).pluck(
+			'messages.number', 'messages.body'
+		).map { |number, body| {id: number, name: body}}
+		render json: messages
 	end
 
 	def search
@@ -56,6 +60,7 @@ class MessagesController < ApplicationController
 			number: params[:chat_number],
 			application:{ token: params[:application_token] }
 		).first
+		return render(json: "Chat not Found", status: 404) unless chat
 		validate_body_param()
 		page_number, page_size = get_pagination_params()
 		messages = Message.search(params[:body], chat.id, page_number, page_size)

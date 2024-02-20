@@ -30,8 +30,11 @@ class ChatsController < ApplicationController
 		chat = Chat.joins(:application).where(
 			number: params[:number],
 			application:{ token: params[:application_token] }
-		).first
-		if chat
+		).pluck(
+			'chats.number', 'chats.messages_count'
+		).map { |number, messages_count| {number: number, messages_count: messages_count}}
+
+		if chat.empty?
 			render json: ChatRepresenter.new(chat).as_json
 		else
 			render json: "Chat not Found", status: 404
@@ -41,7 +44,9 @@ class ChatsController < ApplicationController
 	def index
 		chats = Chat.joins(:application).where(
 			application:{ token: params[:application_token] }
-		)
-		render json: ChatRepresenter.new(paginate(chats)).as_json
+		).pluck(
+			'chats.number', 'chats.messages_count'
+		).map { |number, messages_count| {number: number, messages_count: messages_count}}
+		render json: chats
 	end
 end
