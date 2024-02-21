@@ -13,21 +13,20 @@ RSpec.describe ChatsController, type: :controller do
       allow(CreateChatsJob).to receive(:perform_async)
     end
 
-    it 'new chat data added correctly to the queue' do
+    it 'adds new chat data correctly to the queue' do
       post :create, params: { application_token: application.token }
 
-      expect($redis).to have_received(:incr).with(
-        "#{Rails.configuration.redis_chats_number_key_prefix}_#{application.id}"
-      )
       expect(response).to have_http_status(:created)
       expect(response_json['number']).to eq(1)
       expect(response_json['messages_count']).to eq(0)
       validate_id_and_timestamps_not_returned()
+      expect($redis).to have_received(:incr).with(
+        "#{Rails.configuration.redis_chats_number_key_prefix}_#{application.id}"
+      )
 
-      new_chat = Chat.last
-      expect(new_chat).to be_nil
+      expect(Chat.count).to eq(0)
 
-      allow($redis).to receive(:lpush).with(
+      expect($redis).to have_received(:lpush).with(
         "chats",
         {
             "number"=>1,

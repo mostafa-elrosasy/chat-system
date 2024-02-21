@@ -6,7 +6,7 @@ class MessagesController < ApplicationController
 			number: params[:chat_number],
 			application:{ token: params[:application_token] }
 		).select("id").first
-		return render(json: "Chat not Found", status: 404) unless chat
+		return render(json: {"error": "Chat not Found"}, status: :not_found) unless chat
 
 		message_number = $redis.incr(
 			"#{Rails.configuration.redis_messages_number_key_prefix}_#{chat.id}"
@@ -37,12 +37,12 @@ class MessagesController < ApplicationController
 			chat: {number: params[:chat_number]}
 		).pluck(
 			'messages.number', 'messages.body'
-		).map { |number, body| {id: number, name: body}}
+		).map { |number, body| {number: number, name: body}}
 
 		unless message.empty?
 			render json: message[0]
 		else
-			render json: "Message not Found", status: 404
+			render json: { "error": "Message not Found" }, status: :not_found
 		end
 	end
 
@@ -53,7 +53,7 @@ class MessagesController < ApplicationController
 		).order(number: :desc)
 		messages = paginate(messages).pluck(
 			'messages.number', 'messages.body'
-		).map { |number, body| {id: number, name: body}}
+		).map { |number, body| {number: number, name: body}}
 		render json: messages
 	end
 
@@ -62,7 +62,7 @@ class MessagesController < ApplicationController
 			number: params[:chat_number],
 			application:{ token: params[:application_token] }
 		).first
-		return render(json: "Chat not Found", status: 404) unless chat
+		return render(json: {"error": "Chat not Found"}, status: :not_found) unless chat
 		validate_body_param()
 		page_number, page_size = get_pagination_params()
 		messages = Message.search(params[:body], chat.id, page_number, page_size)
@@ -75,12 +75,12 @@ class MessagesController < ApplicationController
 			application:{ token: params[:application_token] },
 			chat: {number: params[:chat_number]}
 		).first
-		return render(json: "Message not Found", status: 404) unless message
+		return render(json: { "error": "Message not Found" }, status: :not_found) unless message
 	
 		if message.update(message_params)
 		  render json: MessageRepresenter.new(message).as_json
 		else
-		  render json: { errors: message.errors }, status: :unprocessable_entity
+		  render json: { errors: message.errors }, status: :bad_request
 		end
 	end
 
