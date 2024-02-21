@@ -7,7 +7,7 @@ class ChatsController < ApplicationController
 		application = Application.where(
 			token: params[:application_token]
 		).select("id").first
-		return render(json: "Application not Found", status: 404) unless application
+		return render(json: {"error": "Application not Found"}, status: :not_found) unless application
 
 		chat_number = $redis.incr(
 			"#{Rails.configuration.redis_chats_number_key_prefix}_#{application.id}"
@@ -40,7 +40,7 @@ class ChatsController < ApplicationController
 		unless chat.empty?
 			render json: chat[0]
 		else
-			render json: "Chat not Found", status: 404
+			render json: {"error": "Chat not Found"}, status: :not_found
 		end
 	end
 

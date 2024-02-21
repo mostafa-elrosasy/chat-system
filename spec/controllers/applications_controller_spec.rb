@@ -40,9 +40,10 @@ RSpec.describe ApplicationsController, type: :controller do
         get :show, params: { token: application.token }
 
         expect(response).to have_http_status(:ok)
-        expect(response_json['name']).to eq(application.name)
-        expect(response_json['chats_count']).to eq(application.chats_count)
-        expect(response_json['token']).to eq(application.token)
+        response_data = response_json
+        expect(response_data['name']).to eq(application.name)
+        expect(response_data['chats_count']).to eq(application.chats_count)
+        expect(response_data['token']).to eq(application.token)
         validate_id_and_timestamps_not_returned()
       end
     end
@@ -107,8 +108,9 @@ RSpec.describe ApplicationsController, type: :controller do
   end
 
   def validate_id_and_timestamps_not_returned
-    expect(response_json['id']).to be_nil
-    expect(response_json['created_at']).to be_nil
-    expect(response_json['updated_at']).to be_nil
+    response_data = response_json
+    expect(response_data['id']).to be_nil
+    expect(response_data['created_at']).to be_nil
+    expect(response_data['updated_at']).to be_nil
   end
 end
