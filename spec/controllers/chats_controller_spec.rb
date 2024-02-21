@@ -29,7 +29,6 @@ RSpec.describe ChatsController, type: :controller do
         'chats',
         {
           'number' => 1,
-          'messages_count' => 0,
           'application_id' => application.id
         }.to_json
       )

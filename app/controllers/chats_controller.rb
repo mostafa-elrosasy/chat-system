@@ -17,7 +17,6 @@ class ChatsController < ApplicationController
     if chat.valid?
       queue_size = $redis.lpush('chats', {
         'number' => chat_number,
-        'messages_count' => 0,
         'application_id' => application.id
       }.to_json)
       CreateChatsJob.perform_async(SecureRandom.uuid) if queue_size >= Rails.configuration.chats_batch_size
