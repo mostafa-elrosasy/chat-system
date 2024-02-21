@@ -6,10 +6,11 @@ class CreateChatsJob
   sidekiq_options retry: 3
 
   def perform(back_up_queue_id)
-    chats_data =  $redis.lrange(back_up_queue_id, 0, -1)
+    chats_data = $redis.lrange(back_up_queue_id, 0, -1)
     (Rails.configuration.chats_batch_size - chats_data.length).times do
-      chat_data = $redis.lmove("chats", back_up_queue_id, :right, :left)
-      break if chat_data.nil?        
+      chat_data = $redis.lmove('chats', back_up_queue_id, :right, :left)
+      break if chat_data.nil?
+
       chats_data.append(chat_data)
     end
     chats_data = chats_data.map { |chat_data| JSON.parse(chat_data) }

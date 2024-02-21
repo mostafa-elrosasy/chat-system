@@ -1,7 +1,6 @@
 require 'rails_helper'
 
 RSpec.describe ChatsController, type: :controller do
-  let(:application_token) { 'application_token' }
   let(:application) { FactoryBot.create(:application) }
   let(:other_application) { FactoryBot.create(:application) }
 
@@ -19,7 +18,7 @@ RSpec.describe ChatsController, type: :controller do
       expect(response).to have_http_status(:created)
       expect(response_json['number']).to eq(1)
       expect(response_json['messages_count']).to eq(0)
-      validate_id_and_timestamps_not_returned()
+      validate_id_and_timestamps_not_returned
       expect($redis).to have_received(:incr).with(
         "#{Rails.configuration.redis_chats_number_key_prefix}_#{application.id}"
       )
@@ -27,11 +26,11 @@ RSpec.describe ChatsController, type: :controller do
       expect(Chat.count).to eq(0)
 
       expect($redis).to have_received(:lpush).with(
-        "chats",
+        'chats',
         {
-            "number"=>1,
-            "messages_count"=>0,
-            "application_id"=>application.id
+          'number' => 1,
+          'messages_count' => 0,
+          'application_id' => application.id
         }.to_json
       )
     end
@@ -68,7 +67,7 @@ RSpec.describe ChatsController, type: :controller do
 
       expect(response).to have_http_status(:ok)
       expect(response_json).to eq({ 'number' => chat.number, 'messages_count' => chat.messages_count })
-      validate_id_and_timestamps_not_returned()
+      validate_id_and_timestamps_not_returned
     end
 
     it 'renders error response when chat is not found' do
@@ -91,7 +90,7 @@ RSpec.describe ChatsController, type: :controller do
     end
 
     it 'renders the correct number of chats for the given page_size' do
-      get :index, params: { application_token: application.token , page_size: 1}
+      get :index, params: { application_token: application.token, page_size: 1 }
 
       expect(response).to have_http_status(:ok)
       expect(response_json.count).to eq(1)

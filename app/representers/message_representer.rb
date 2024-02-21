@@ -1,22 +1,22 @@
 class MessageRepresenter
-    def initialize messages
-        @messages = messages
-    end
+  def initialize(messages)
+    @messages = messages
+  end
 
-    def as_json
-        return serialize @messages unless @messages.respond_to?(:each)
-        
-        @messages.map(&method(:serialize))
-    end
+  def as_json
+    return serialize @messages unless @messages.respond_to?(:each)
 
-    def serialize message
-        {
-            "number": message.number,
-            "body": message.body,
-        }
-    end
+    @messages.map(&method(:serialize))
+  end
 
-    private
+  def serialize(message)
+    {
+      "number": message.number,
+      "body": message.body
+    }
+  end
 
-    attr_reader :messages
+  private
+
+  attr_reader :messages
 end

@@ -14,8 +14,8 @@ RSpec.describe ApplicationsController, type: :controller do
         expect(application.name).to eq(valid_attributes[:application][:name])
         expect(application.chats_count).to eq(0)
         expect(application.token).to be_present
-        
-        validate_id_and_timestamps_not_returned()
+
+        validate_id_and_timestamps_not_returned
         expect(response_json['token']).to eq(application.token)
       end
     end
@@ -44,7 +44,7 @@ RSpec.describe ApplicationsController, type: :controller do
         expect(response_data['name']).to eq(application.name)
         expect(response_data['chats_count']).to eq(application.chats_count)
         expect(response_data['token']).to eq(application.token)
-        validate_id_and_timestamps_not_returned()
+        validate_id_and_timestamps_not_returned
       end
     end
 
@@ -70,7 +70,7 @@ RSpec.describe ApplicationsController, type: :controller do
 
         expect(response).to have_http_status(:ok)
         expect(response_json['name']).to eq(new_name)
-        validate_id_and_timestamps_not_returned()
+        validate_id_and_timestamps_not_returned
 
         application = Application.last
         expect(application).to be_present
@@ -85,7 +85,7 @@ RSpec.describe ApplicationsController, type: :controller do
         patch :update, params: invalid_update_params
 
         expect(response).to have_http_status(:bad_request)
-        expect(response_json["errors"]).to include('name' => ['can\'t be blank'])
+        expect(response_json['errors']).to include('name' => ['can\'t be blank'])
       end
     end
 

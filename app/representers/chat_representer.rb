@@ -1,22 +1,22 @@
 class ChatRepresenter
-    def initialize chats
-        @chats = chats
-    end
+  def initialize(chats)
+    @chats = chats
+  end
 
-    def as_json
-        return serialize chats unless chats.respond_to?(:each)
-        
-        chats.map(&method(:serialize))
-    end
+  def as_json
+    return serialize chats unless chats.respond_to?(:each)
 
-    def serialize chat
-        {
-            "number": chat.number,
-            "messages_count": chat.messages_count,
-        }
-    end
+    chats.map(&method(:serialize))
+  end
 
-    private
+  def serialize(chat)
+    {
+      "number": chat.number,
+      "messages_count": chat.messages_count
+    }
+  end
 
-    attr_reader :chats
+  private
+
+  attr_reader :chats
 end

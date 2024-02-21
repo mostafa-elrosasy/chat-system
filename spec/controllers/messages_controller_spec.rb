@@ -2,11 +2,13 @@ require 'rails_helper'
 
 RSpec.describe MessagesController, type: :controller do
   let(:chat) { FactoryBot.create(:chat) }
-  let(:valid_params) { { 
-    chat_number: chat.number,
-    application_token: chat.application.token, 
-    message: { body: 'Test Body' }
-  } }
+  let(:valid_params) do
+    {
+      chat_number: chat.number,
+      application_token: chat.application.token,
+      message: { body: 'Test Body' }
+    }
+  end
 
   describe 'POST create' do
     before do
@@ -22,7 +24,7 @@ RSpec.describe MessagesController, type: :controller do
         expect(response).to have_http_status(:created)
         expect(response_json['number']).to eq(1)
         expect(response_json['body']).to eq('Test Body')
-        validate_id_and_timestamps_not_returned()
+        validate_id_and_timestamps_not_returned
 
         expect($redis).to have_received(:incr).with(
           "#{Rails.configuration.redis_messages_number_key_prefix}_#{chat.id}"
@@ -31,53 +33,53 @@ RSpec.describe MessagesController, type: :controller do
         expect(Message.count).to eq(0)
 
         expect($redis).to have_received(:lpush).with(
-        "messages",
-        {
-          "number"=>1,
-          "chat_id"=>chat.id,
-          "body"=>'Test Body'
-        }.to_json
-      )
+          'messages',
+          {
+            'number' => 1,
+            'chat_id' => chat.id,
+            'body' => 'Test Body'
+          }.to_json
+        )
       end
     end
 
     context 'with invalid parameters' do
       it 'returns bad request status' do
-        post :create, params: { 
-          chat_number: chat.number, 
+        post :create, params: {
+          chat_number: chat.number,
           application_token: chat.application.token,
           message: { body: '' }
         }
         expect(response).to have_http_status(:bad_request)
         expect(Message.count).to eq(0)
       end
-      
+
       it 'enqueues a job when queue size is greater than or equal to batch size' do
         allow($redis).to receive(:lpush).and_return(Rails.configuration.messages_batch_size)
-  
+
         post :create, params: valid_params
-  
+
         expect(CreateMessagesJob).to have_received(:perform_async).with('fake_uuid')
       end
-  
+
       it 'doesnt enqueue a job when queue size is less than to batch size' do
         allow($redis).to receive(:lpush).and_return(Rails.configuration.messages_batch_size - 1)
-  
+
         post :create, params: valid_params
-  
+
         expect(CreateMessagesJob).to_not have_received(:perform_async)
       end
-      
-        it 'renders error response when chat is not found' do
-          post :create, params: { 
-            chat_number: chat.number, 
-            application_token: "invalid token",
-            message: { body: '' }
-          }
-    
-          expect(response).to have_http_status(:not_found)
-          expect(response_json['error']).to eq('Chat not Found')
-        end
+
+      it 'renders error response when chat is not found' do
+        post :create, params: {
+          chat_number: chat.number,
+          application_token: 'invalid token',
+          message: { body: '' }
+        }
+
+        expect(response).to have_http_status(:not_found)
+        expect(response_json['error']).to eq('Chat not Found')
+      end
     end
   end
 
@@ -86,11 +88,12 @@ RSpec.describe MessagesController, type: :controller do
       let(:message) { FactoryBot.create(:message, chat: chat) }
 
       it 'returns the message details' do
-        get :show, params: { chat_number: chat.number, application_token: chat.application.token, number: message.number }
+        get :show,
+            params: { chat_number: chat.number, application_token: chat.application.token, number: message.number }
         expect(response).to have_http_status(:ok)
         expect(response_json['number']).to eq(message.number)
         expect(response_json['name']).to eq(message.body)
-        validate_id_and_timestamps_not_returned()
+        validate_id_and_timestamps_not_returned
       end
     end
 
@@ -114,7 +117,7 @@ RSpec.describe MessagesController, type: :controller do
 
       it 'renders the correct number of messages for the given page_size' do
         get :index, params: { chat_number: chat.number, application_token: chat.application.token, page_size: 1 }
-  
+
         expect(response).to have_http_status(:ok)
         expect(response_json.count).to eq(1)
       end
@@ -123,14 +126,14 @@ RSpec.describe MessagesController, type: :controller do
 
   describe 'GET search' do
     let!(:messages) { FactoryBot.create_list(:message, 3, chat: chat) }
-    
+
     before do
       allow(Message).to receive(:search).and_return(messages)
     end
-    
+
     context 'when messages exist' do
       it 'returns a list of messages' do
-        get :search, params: { chat_number: chat.number, application_token: chat.application.token, body: "test" }
+        get :search, params: { chat_number: chat.number, application_token: chat.application.token, body: 'test' }
         expect(response).to have_http_status(:ok)
         expect(response_json.size).to eq(3)
       end
@@ -146,12 +149,14 @@ RSpec.describe MessagesController, type: :controller do
   end
 
   describe 'PATCH update' do
+    let(:updated_body) { 'Updated Body' }
     context 'when the message exists' do
       let!(:message) { FactoryBot.create(:message, chat: chat) }
-      let(:updated_body) { 'Updated Body' }
 
       it 'updates the message' do
-        patch :update, params: { chat_number: chat.number, application_token: chat.application.token, number: message.number, message: { body: updated_body } }
+        patch :update,
+              params: { chat_number: chat.number, application_token: chat.application.token, number: message.number,
+                        message: { body: updated_body } }
         expect(response).to have_http_status(:ok)
         expect(message.reload.body).to eq(updated_body)
       end
@@ -159,7 +164,9 @@ RSpec.describe MessagesController, type: :controller do
 
     context 'when the message does not exist' do
       it 'returns not found status' do
-        patch :update, params: { chat_number: chat.number, application_token: chat.application.token, number: 123, message: { body: 'Updated Body' } }
+        patch :update,
+              params: { chat_number: chat.number, application_token: chat.application.token, number: 123,
+                        message: { body: updated_body } }
         expect(response).to have_http_status(:not_found)
       end
     end
@@ -168,7 +175,9 @@ RSpec.describe MessagesController, type: :controller do
       let!(:message) { FactoryBot.create(:message, chat: chat) }
 
       it 'returns bad request status' do
-        patch :update, params: { chat_number: chat.number, application_token: chat.application.token, number: message.number, message: { body: '' } }
+        patch :update,
+              params: { chat_number: chat.number, application_token: chat.application.token, number: message.number,
+                        message: { body: '' } }
         expect(response).to have_http_status(:bad_request)
         expect(message.reload.body).not_to eq('')
       end
